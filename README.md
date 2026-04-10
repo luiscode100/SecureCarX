@@ -1,4 +1,4 @@
-# AutoClaim Manager 2.0: Predicción de Costes de Siniestros Automovilísticos
+# AutoClaim Manager 2.0: Predicción de Costes de Siniestros de Vehículos
 
 Este proyecto forma parte de la asignatura **Desarrollo e Integración de Servicios de IA** del Máster en Ingeniería Informática (UCLM). El objetivo es implementar un sistema de Inteligencia Artificial capaz de estimar el coste económico de siniestros de vehículos para optimizar la gestión de provisiones técnicas y autorizaciones de reparación de la aseguradora ficticia **Línea Seguros S.A.**
 
