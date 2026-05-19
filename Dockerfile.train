@@ -1,0 +1,23 @@
+# Imagen base de Python
+FROM python:3.12-slim
+
+# Directorio de trabajo
+WORKDIR /app
+
+# Copiar e instalar dependencias
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar el código fuente y los datos (Simulación de ingesta [cite: 46, 61])
+COPY src/ ./src/
+COPY data/ ./data/
+
+# Crear carpeta para persistencia local del modelo [cite: 42]
+RUN mkdir -p models
+
+# Variables de entorno para MLflow (Configurabilidad )
+ENV MLFLOW_TRACKING_URI=http://mlflow:5000
+ENV PYTHONPATH=/app/src
+
+# El comando por defecto ahora utiliza la parametrización de argparse [cite: 42]
+CMD ["python", "src/train.py", "--input", "data/securecarx_dataset.csv", "--output_dir", "models"]
