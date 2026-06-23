@@ -1,0 +1,26 @@
+# Esto es una imagen con python 3.12 slim
+FROM python:3.12-slim
+
+#Define el directorio de trabajo dentro del contenedor
+WORKDIR /app 
+
+# Copia el archivo de dependencias desde tu proyecto al directorio /app del contenedor
+COPY backend/requirements.txt .
+#Instala todas las librerías desde requirements.txt 
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiamos la carpeta de código fuente del proyecto dentro del directorio /app
+COPY backend/src/ ./src/
+
+# Copiamos la carpeta de modelos (como respaldo para carga local)
+COPY backend/models/ ./models/
+
+
+ENV MLFLOW_TRACKING_URI=http://mlflow:5000
+ENV PYTHONPATH=/app/src
+
+# Indica que el contenedor usará el puerto 8000.
+EXPOSE 8000
+
+# Comando que se ejecuta al arrancar el contenedor
+CMD ["python", "src/app.py", "--host", "0.0.0.0", "--port", "8000"]

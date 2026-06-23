@@ -1,0 +1,63 @@
+services:
+  mlflow:   # Servicio 0: Servidor de MLflow
+    image: ghcr.io/mlflow/mlflow:latest # NO se construye nada, se usa una imagen ya creada oficial de MLflow desde GitHub Container
+    container_name: mlflow_server #nombre del contenedor
+    ports:
+      - "5000:5000" 
+    volumes:
+      - ../backend/mlruns:/app/mlruns
+    environment:
+      - MLFLOW_HTTP_WHITELIST=* #Permite peticiones HTTP sin restricciones
+    # guarda datos de experimentos y artefactos en efile:///app/mlruns, accesible desde fuera del contenedor 0.0.0.0 
+    command: mlflow server --backend-store-uri file:///app/mlruns --default-artifact-root file:///app/mlruns --host 0.0.0.0 --port 5000 
+
+
+  train:   # Servicio 1: Entrenamiento
+    build:
+    # crea una imagen dockerfile
+      context: ..
+      dockerfile: infra/Dockerfile.train
+    volumes:
+    # monta los directorios del host en el contenedor (no es una copia sino una referencia)
+      - ../backend/models:/app/models 
+      - ../backend/mlruns:/app/mlruns
+    environment:
+      - MLFLOW_TRACKING_URI=file:///app/mlruns #guarda los experimentos en /app/mlruns, que está montado sobre la carpeta backend/mlruns del host
+    depends_on:
+      - mlflow
+
+  # Servicio 2: API
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend/models:/app/models
+      - ../backend/mlruns:/app/mlruns
+      - ../backend/data:/app/data
+    environment:
+      # CAMBIO: Usamos el sistema de archivos
+      - MLFLOW_TRACKING_URI=file:///app/mlruns
+    depends_on:
+      train:
+        condition: service_completed_successfully
+      mlflow:
+        condition: service_started
+
+  # Servicio 3: Monitor
+  monitor:
+      build:
+        context: ..
+        dockerfile: infra/Dockerfile.monitor
+      volumes:
+        - ../backend/data:/app/data
+        - ../backend/src:/app/src
+        - ../backend/models:/app/models
+        - ../backend/mlruns:/app/mlruns  
+      environment:
+        - MLFLOW_TRACKING_URI=file:///app/mlruns  
+        - PYTHONUNBUFFERED=1
+      depends_on:
+        - api

@@ -18,8 +18,6 @@ from data_ingestion import load_data
 from features import clean_data, filter_training_data, prepare_features
 
 # --- CONFIGURACIÓN MLFLOW PROTEGIDA ---
-#MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "file:///app/mlruns")
-#MLFLOW_URI = "file:///app/mlruns"
 MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
 try:
     mlflow.set_tracking_uri(MLFLOW_URI)
@@ -108,9 +106,14 @@ def run_training(input_path, model_dir):
     print(f"MODELO GUARDADO LOCALMENTE EN: {model_path}")
 
 if __name__ == "__main__":
+    # Calculamos de forma dinámica la raíz de 'backend' (un nivel arriba de 'src')
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    DEFAULT_INPUT = os.path.join(BASE_DIR, "data", "securecarx_dataset.csv")
+    DEFAULT_OUTPUT = os.path.join(BASE_DIR, "models")
+
     parser = argparse.ArgumentParser(description="Pipeline de Entrenamiento SecureCarX")
-    parser.add_argument("--input", type=str, default="data/securecarx_dataset.csv")
-    parser.add_argument("--output_dir", type=str, default="models")
+    parser.add_argument("--input", type=str, default=DEFAULT_INPUT)
+    parser.add_argument("--output_dir", type=str, default=DEFAULT_OUTPUT)
 
     args = parser.parse_args()
     run_training(input_path=args.input, model_dir=args.output_dir)

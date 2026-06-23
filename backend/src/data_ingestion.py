@@ -11,6 +11,8 @@ def load_data(file_path):
     return df
 
 if __name__ == "__main__":
-    # Quick test
-    raw_data = load_data("data/securecarx_dataset.csv")
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    DATA_PATH = os.path.join(BASE_DIR, "data", "securecarx_dataset.csv")
+
+    raw_data = load_data(DATA_PATH)
     print(f"Data loaded successfully. Rows: {raw_data.shape[0]}")

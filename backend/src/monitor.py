@@ -13,7 +13,12 @@ warnings.filterwarnings("ignore")
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 from train import run_training  # Importamos tu reentrenamiento del Hito 4
 
-DATA_DIR = "/app/data"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+DATA_DIR = "/app/data" if os.path.exists("/app") else os.path.join(BASE_DIR, "data")
+MODELS_DIR = "/app/models" if os.path.exists("/app") else os.path.join(BASE_DIR, "models")
+MLRUNS_DIR = "file:///app/mlruns" if os.path.exists("/app") else f"file://{os.path.join(BASE_DIR, 'mlruns')}"
+
 LOG_FILE = os.path.join(DATA_DIR, "prediction_logs.csv")
 REF_FILE = os.path.join(DATA_DIR, "securecarx_dataset.csv")
 REPORT_FILE = os.path.join(DATA_DIR, "drift_report.html")
@@ -49,10 +54,26 @@ def run_monitoring():
         if len(ref_data) > 5000:
             ref_data = ref_data.sample(n=5000, random_state=42).reset_index(drop=True)
             
+        # prod_logs = pd.read_csv(LOG_FILE)
+        # if prod_logs.empty:
+        #     print("Logs vacíos.")
+        #     return
+
+
         prod_logs = pd.read_csv(LOG_FILE)
         if prod_logs.empty:
             print("Logs vacíos.")
             return
+            
+        # NUEVO: Control de volumen mínimo para evitar falsos positivos
+        if len(prod_logs) < 10:
+            print(f"Volumen insuficiente en producción ({len(prod_logs)}/10 peticiones). Esperando más datos para analizar Drift.")
+            calcular_metricas_operativas(prod_logs) # Muestra latencia igualmente
+            return
+
+
+
+
 
         # 1. Calcular Métricas Operativas Reales
         calcular_metricas_operativas(prod_logs)
@@ -72,6 +93,7 @@ def run_monitoring():
         from evidently.metric_preset import DataDriftPreset
         
         report = Report(metrics=[DataDriftPreset()])
+        
         # Eliminamos el parámetro column_mapping porque los subsets ya están limpios
         report.run(reference_data=ref_data_subset, current_data=prod_data_subset)
         report.save_html(REPORT_FILE)
@@ -95,15 +117,14 @@ def run_monitoring():
 
         print(f"Análisis de Modelo: {porcentaje_drift:.2f}% de las variables presentan Data Drift.")
 
-        # Si el desajuste supera el umbral del 30%, se dispara la alerta y el reentrenamiento
         if porcentaje_drift >= 30.0:
             enviar_alerta("MODELO (Data Drift)", f"Se ha detectado deriva masiva de datos ({porcentaje_drift:.2f}%).")
             
             print("Configurando URI local para almacenar los resultados del reentrenamiento...")
-            mlflow.set_tracking_uri("file:///app/mlruns")
+            mlflow.set_tracking_uri(MLRUNS_DIR) # <-- Cambiado a variable dinámica
             
             print("Disparando FEEDBACK LOOP: Iniciando Reentrenamiento Automático...")
-            run_training(input_path=REF_FILE, model_dir="/app/models")
+            run_training(input_path=REF_FILE, model_dir=MODELS_DIR) # <-- Cambiado a variable dinámica
             print("FEEDBACK LOOP COMPLETADO: El modelo de producción ha sido actualizado en caliente.")
         
     except Exception as e:

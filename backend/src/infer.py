@@ -17,8 +17,12 @@ from features import clean_data, prepare_features
 MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
 mlflow.set_tracking_uri(MLFLOW_URI)
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_MODEL = os.path.join(BASE_DIR, "models", "rf_model.joblib")
+DEFAULT_COLUMNS = os.path.join(BASE_DIR, "models", "model_columns.joblib")
+
 class ModelInference:
-    def __init__(self, model_path="models/rf_model.joblib", columns_path="models/model_columns.joblib", use_mlflow=False):
+    def __init__(self, model_path=DEFAULT_MODEL, columns_path=DEFAULT_COLUMNS, use_mlflow=False):
         """
         Inicia el motor de inferencia. 
         Puede cargar el modelo localmente o desde el Model Registry de MLflow.
@@ -61,8 +65,8 @@ class ModelInference:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Script de Inferencia SecureCarX")
-    parser.add_argument("--model", type=str, default="models/rf_model.joblib", help="Ruta local del modelo")
-    parser.add_argument("--columns", type=str, default="models/model_columns.joblib", help="Ruta de columnas")
+    parser.add_argument("--model", type=str, default=DEFAULT_MODEL, help="Ruta local del modelo")
+    parser.add_argument("--columns", type=str, default=DEFAULT_COLUMNS, help="Ruta de columnas")
     parser.add_argument("--mlflow", action="store_true", help="Usar MLflow para cargar el modelo")
     
     args = parser.parse_args()

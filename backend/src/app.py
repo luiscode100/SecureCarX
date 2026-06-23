@@ -3,6 +3,8 @@ import os
 import argparse
 import time
 import csv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 
 # Aseguramos que Python encuentre los módulos en la carpeta src
@@ -13,7 +15,9 @@ from pydantic import BaseModel
 from infer import ModelInference
 
 # --- CONFIGURACIÓN DE LOGS PARA HITO 5 ---
-LOG_FILE = "data/prediction_logs.csv"
+# Encuentra la raíz de 'backend' subiendo un nivel desde 'src'
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LOG_FILE = os.path.join(BASE_DIR, "data", "prediction_logs.csv")
 
 def log_prediction(input_data, prediction, latency):
     """Guarda la petición completa para detectar Data Drift después."""
@@ -57,6 +61,16 @@ class CarData(BaseModel):
 # 2. Inicialización
 app = FastAPI(title="SecureCarX - Predicción de Siniestros")
 inference_engine = ModelInference()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],             # Permite que tu archivo HTML local pueda leer las respuestas
+    allow_credentials=True,
+    allow_methods=["*"],             # Permite el uso de POST, GET, etc.
+    allow_headers=["*"],             # Permite el envío de cabeceras de datos
+)
+
 
 @app.get("/")
 def home():
