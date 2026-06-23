@@ -33,7 +33,6 @@ Este proyecto implementa una solución completa de producción de Machine Learni
 
 Para levantar la infraestructura:
 
-```bash
 docker compose -f infra/docker-compose.yml up --build
 
 ---
