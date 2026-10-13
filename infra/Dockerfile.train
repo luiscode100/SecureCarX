@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar el código fuente y los datos (Simulación de ingesta [cite: 46, 61])
 COPY backend/src/ ./src/
-COPY backend/data/ ./data/
+COPY data/ ./data/
 
 # Crear carpeta para persistencia local del modelo [cite: 42]
 RUN mkdir -p models
@@ -20,4 +20,4 @@ ENV MLFLOW_TRACKING_URI=http://mlflow:5000
 ENV PYTHONPATH=/app/src
 
 # El comando por defecto ahora utiliza la parametrización de argparse [cite: 42]
-CMD ["python", "src/train.py", "--input", "data/securecarx_dataset.csv", "--output_dir", "models"]
+CMD ["python", "src/train.py", "--input", "data/raw/securecarx_dataset.csv", "--output_dir", "models"]

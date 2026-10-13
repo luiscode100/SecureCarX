@@ -1,0 +1,13 @@
+.git
+.gitignore
+.venv
+**/__pycache__
+*.pyc
+.env
+notebooks
+repomix-output.xml
+.DS_Store
+guia.md
+artifacts/mlruns
+data/operational
+data/reports

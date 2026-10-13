@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/src/ ./src/
 
 # Copiamos la carpeta de modelos (como respaldo para carga local)
-COPY backend/models/ ./models/
+COPY artifacts/models/ ./models/
 
 
 ENV MLFLOW_TRACKING_URI=http://mlflow:5000

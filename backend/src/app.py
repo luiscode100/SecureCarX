@@ -1,46 +1,15 @@
-import sys
-import os
 import argparse
+import os
 import time
-import csv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime
-
-# Aseguramos que Python encuentre los módulos en la carpeta src
-sys.path.append(os.path.join(os.path.dirname(__file__)))
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+from feedback import log_feedback
 from infer import ModelInference
+from prediction_log import log_prediction
 
-# --- CONFIGURACIÓN DE LOGS PARA HITO 5 ---
-# Encuentra la raíz de 'backend' subiendo un nivel desde 'src'
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LOG_FILE = os.path.join(BASE_DIR, "data", "prediction_logs.csv")
-
-def log_prediction(input_data, prediction, latency):
-    """Guarda la petición completa para detectar Data Drift después."""
-    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
-    file_exists = os.path.isfile(LOG_FILE)
-    
-    with open(LOG_FILE, mode='a', newline='') as f:
-        # CAMBIO AQUÍ: Añadimos "input_data" a la lista de columnas permitidas
-        fieldnames = ["timestamp", "input_data", "predicted_amount", "latency_ms", "status"]
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        
-        if not file_exists:
-            writer.writeheader()
-            
-        writer.writerow({
-            "timestamp": datetime.now().isoformat(),
-            "input_data": str(input_data), # Lo guardamos como texto/string
-            "predicted_amount": round(prediction, 2),
-            "latency_ms": round(latency * 1000, 2),
-            "status": "success"
-        })
-        
-# 1. Estructura de datos de entrada
 class CarData(BaseModel):
     OBJECT_ID: int
     INSR_BEGIN: str
@@ -58,19 +27,25 @@ class CarData(BaseModel):
     CCM_TON: float
     EFFECTIVE_YR: int
 
-# 2. Inicialización
+
+class FeedbackData(CarData):
+    CLAIM_PAID: float
+
+
+ALLOWED_ORIGINS = [
+    o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "*").split(",") if o.strip()
+]
+
 app = FastAPI(title="SecureCarX - Predicción de Siniestros")
 inference_engine = ModelInference()
 
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],             # Permite que tu archivo HTML local pueda leer las respuestas
-    allow_credentials=True,
-    allow_methods=["*"],             # Permite el uso de POST, GET, etc.
-    allow_headers=["*"],             # Permite el envío de cabeceras de datos
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=ALLOWED_ORIGINS != ["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
 )
-
 
 @app.get("/")
 def home():
@@ -85,18 +60,17 @@ def health_check():
 
 @app.post("/predict")
 def predict(data: CarData):
-    start_time = time.time() # HITO 5: Inicio cronómetro
+    start_time = time.time()
     try:
-        input_dict = data.dict()
+        input_dict = data.model_dump()
         prediction = inference_engine.predict_claim(input_dict)
-        
+
         if isinstance(prediction, str):
             raise HTTPException(status_code=400, detail=prediction)
-        
-        # HITO 5: Cálculo de latencia y guardado de log
+
         latency = time.time() - start_time
         log_prediction(input_dict, prediction, latency)
-            
+
         return {
             "status": "success",
             "predicted_claim_amount": round(prediction, 2),
@@ -104,8 +78,25 @@ def predict(data: CarData):
             "latency_ms": round(latency * 1000, 2)
         }
     except Exception as e:
-        # También podrías loguear los fallos aquí si quisieras
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/feedback")
+def feedback(data: FeedbackData):
+    """Recibe la etiqueta real (coste del siniestro) para el feedback loop."""
+    try:
+        log_feedback(data.model_dump())
+        return {"status": "recorded"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/reload")
+def reload_model():
+    """Recarga el modelo desde disco tras un reentrenamiento (feedback loop)."""
+    try:
+        inference_engine.reload()
+        return {"status": "reloaded", "model_loaded": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error recargando el modelo: {e}")
 
 if __name__ == "__main__":
     import uvicorn

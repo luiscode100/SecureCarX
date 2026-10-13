@@ -4,10 +4,12 @@ backend/**/__pycache__/
 *.pyc
 .env
 
+artifacts/mlruns/
+artifacts/models/*.joblib
+artifacts/models/model_columns.joblib
+# Legacy location kept temporarily because it is owned by root.
 backend/mlruns/
-backend/models/*.joblib
-backend/models/model_columns.joblib
-backend/data/prediction_logs.csv
-backend/data/drift_report.html
+data/prediction_logs.csv
+data/drift_report.html
 guia.md
 .DS_Store

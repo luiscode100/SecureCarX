@@ -1,0 +1,23 @@
+artifact_path: /media/luis/sdisk/workspace/Master/DSIA/SecureCarX/mlruns/1/models/m-ecb1a5408fc64e8eaeb88f7b5530ff64/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.12.3
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+mlflow_version: 3.12.0
+model_id: m-ecb1a5408fc64e8eaeb88f7b5530ff64
+model_size_bytes: 11485504
+model_uuid: m-ecb1a5408fc64e8eaeb88f7b5530ff64
+prompts: null
+run_id: e3bd73087eb7497ea2ccc17ee4e40414
+utc_time_created: '2026-09-22 11:35:26.335313'
